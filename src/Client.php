@@ -61,17 +61,17 @@ class Client implements ClientInterface
         $connection = $this->connectionManager->getConnection($connectionAlias);
         $params = null !== $parameters ? $parameters : [];
         $statement = Statement::create($query, $params, $tag);
-        $this->eventDispatcher->dispatch(new PreRunEvent([$statement]), Neo4jClientEvents::NEO4J_PRE_RUN);
+        $this->eventDispatcher->dispatch(Neo4jClientEvents::NEO4J_PRE_RUN, new PreRunEvent([$statement]));
 
         try {
             $result = $connection->run($query, $parameters, $tag);
             $this->eventDispatcher->dispatch(
-                new PostRunEvent(ResultCollection::withResult($result)),
-                Neo4jClientEvents::NEO4J_POST_RUN
+                Neo4jClientEvents::NEO4J_POST_RUN,
+                new PostRunEvent(ResultCollection::withResult($result))
             );
         } catch (Neo4jException $e) {
             $event = new FailureEvent($e);
-            $this->eventDispatcher->dispatch($event, Neo4jClientEvents::NEO4J_ON_FAILURE);
+            $this->eventDispatcher->dispatch(Neo4jClientEvents::NEO4J_ON_FAILURE, $event);
 
             if ($event->shouldThrowException()) {
                 throw $e;
@@ -99,7 +99,7 @@ class Client implements ClientInterface
             ->run($query, $parameters, $tag);
     }
 
-   
+
 
     /**
      * @param string|null $tag
@@ -130,14 +130,14 @@ class Client implements ClientInterface
             $pipeline->push($statement->text(), $statement->parameters(), $statement->getTag());
         }
 
-        $this->eventDispatcher->dispatch(new PreRunEvent($stack->statements()), Neo4jClientEvents::NEO4J_PRE_RUN);
+        $this->eventDispatcher->dispatch(Neo4jClientEvents::NEO4J_PRE_RUN, new PreRunEvent($stack->statements()));
 
         try {
             $results = $pipeline->run();
-            $this->eventDispatcher->dispatch(new PostRunEvent($results), Neo4jClientEvents::NEO4J_POST_RUN);
+            $this->eventDispatcher->dispatch(Neo4jClientEvents::NEO4J_POST_RUN, new PostRunEvent($results));
         } catch (Neo4jException $e) {
             $event = new FailureEvent($e);
-            $this->eventDispatcher->dispatch($event, Neo4jClientEvents::NEO4J_ON_FAILURE);
+            $this->eventDispatcher->dispatch(Neo4jClientEvents::NEO4J_ON_FAILURE, $event);
 
             if ($event->shouldThrowException()) {
                 throw $e;
